@@ -14,18 +14,11 @@ class SelfAttention(nn.Module):
         self.iv = nn.Linear(input_size, value_size)
 
     def forward(self, X):
+        queries = torch.relu(self.iq(X))
         keys = torch.relu(self.ik(X))
         values = torch.relu(self.iv(X))
-        outputs = []
-        for ts in range(X.shape[1]):
-            kq = []
-            query = torch.relu(self.iq(X[:, ts]))
-            for i in range(query.shape[0]):
-                kq.append(torch.matmul(keys[i], query[i][:, None]))
-            kq = torch.stack(kq)
-            kq = torch.softmax(kq, 1)
-            outputs.append(torch.sum(values * kq, dim=1))
-        return torch.transpose(torch.stack(outputs), 0, 1)
+        scores = torch.softmax(torch.matmul(queries, keys.transpose(-2, -1)), dim=-1)
+        return torch.matmul(scores, values)
 
 class AttentionBlock(nn.Module):
     def __init__(self, size, attention_size):
@@ -109,7 +102,7 @@ def mask_name(name):
 
 m = ArtistBERT()
 print(m)
-m.load_state_dict(torch.load("model_9_2.1256439306797126.pt", map_location=torch.device('cpu')))
+m.load_state_dict(torch.load("model_38_1.8238780681903546.pt", map_location=torch.device('cpu')))
 
 n = sys.argv[1]
 x = process_name(n)
