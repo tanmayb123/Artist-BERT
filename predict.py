@@ -36,22 +36,26 @@ class AttentionBlock(nn.Module):
 class ArtistBERT(nn.Module):
     def __init__(self):
         super(ArtistBERT, self).__init__()
-        self.embed = nn.Linear(28, 128)
-        self.pos_embed = nn.Linear(16, 128)
+        self.embed = nn.Linear(29, 128)
+        self.pos_embed = nn.Linear(17, 128)
         self.seg_embed = nn.Linear(4, 128)
         self.a1 = AttentionBlock(128, 128)
         self.a2 = AttentionBlock(128, 128)
         self.a3 = AttentionBlock(128, 128)
         self.a4 = AttentionBlock(128, 128)
-        self.d1 = nn.Linear(128, 26)
+        self.a5 = AttentionBlock(128, 128)
+        self.a6 = AttentionBlock(128, 128)
+        self.d1 = nn.Linear(128, 29)
 
     def forward(self, X, seg_in):
-        pos_in = torch.tensor(np.eye(16)).float().type_as(X)
+        pos_in = torch.tensor(np.eye(17)).float().type_as(X)
         X = self.embed(X) + self.pos_embed(pos_in) + self.seg_embed(seg_in)
         X = self.a1(X)
         X = self.a2(X)
         X = self.a3(X)
         X = self.a4(X)
+        X = self.a5(X)
+        X = self.a6(X)
         return self.d1(X)
 
 def get_relevant_output(y_hat, mask_idxs):
@@ -62,8 +66,8 @@ def get_relevant_output(y_hat, mask_idxs):
     return torch.stack(o)
 
 letterset = "abcdefghijklmnopqrstuvwxyz"
-charset = letterset + " M"
-maxlen = 16
+charset = letterset + " ME"
+maxlen = 17
 
 def segment_in(name):
     segment = 0
@@ -102,7 +106,7 @@ def mask_name(name):
 
 m = ArtistBERT()
 print(m)
-m.load_state_dict(torch.load("model_38_1.8238780681903546.pt", map_location=torch.device('cpu')))
+m.load_state_dict(torch.load("model_70_1.6991746102349232.pt", map_location=torch.device('cpu')))
 
 n = sys.argv[1]
 x = process_name(n)
@@ -114,4 +118,4 @@ x = torch.tensor(x)[None, ...].float()
 s = torch.tensor(s)[None, ...].float()
 
 p = m(x, s)[0].detach().numpy()[n.index("M")]
-print([(letterset[x], p[x]) for x in np.argsort(p)])
+print([(charset[x], p[x]) for x in np.argsort(p)])
